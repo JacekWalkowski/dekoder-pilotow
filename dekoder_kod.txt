@@ -1,0 +1,88 @@
+/*
+ * GccApplication1.c
+ *
+ * Created: 2012-11-03 18:33:50
+ *  Author: Jacek Walkowski
+ */ 
+/*
+Program do dekodowania sygna³u z pilota na podczerwieñ. Ramka danych zapisywana jest w tablicy czas[]. Kolejne elementy tablicy odpowiadaj¹ czasom trwania impulsu oraz czasom trwania przerw w odbieranym sygnale. Wartoœci czasów s¹ zapisywane w mikrosekundach.
+Schemat zapisu danych:
+czas[0] <--czas pierwszego impulsu [us]
+czas[1] <--czas przerwy [us]
+czas[2] <--czas impulsu [us]
+czas[3] <--czas przerwy [us]
+itd.
+*/
+
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/eeprom.h>
+#include <avr/delay.h>
+
+#define IR PB0;
+#define LED PD7;
+
+void skanuj();
+void ram_eeprom();
+
+uint16_t czas1[36] EEMEM; //czasy trwania impulsow i przerw w mikrosekundach
+uint16_t czas[36];
+volatile int i = 0; //zmienna pomocnicza
+
+int main(void)
+{
+	//przycisk
+	DDRC = 0x00;
+	PORTC = 0x20;
+	
+	//dioda led
+	DDRD = 0xFF; //port D jako wyjscie
+	PORTD = 0x00;
+	
+	//odbiornik podczerwieni
+	DDRB = 0xFE; //PB0 wejscie
+	PORTB = 0x01; //PB0 podciagniecie przez rezystor do Vcc (do obslugi podczerwieni)
+	
+	//wlaczenie timera1 z preskalerem 8
+	TCCR1B |= (1<<CS11); //preskaler 8
+
+	//petla glowna programu
+	while(1)
+	{
+		skanuj();
+		if(!(PINC&0x20))	//po nacisnieciu przycisku PC5 przepisz zawartosc tablicy czas[] do eeprom
+		{
+			PORTD |= 1<<LED;
+			_delay_ms(100);
+			ram_eeprom();
+			PORTD = 0x00;
+		}
+	}
+}
+
+void skanuj()
+{
+	while(!(PINB&0x01))	//sprawdzaj czy nadchodzi sygnal z pilota
+	{
+		TCNT1 = 0x00;
+		while(!(PINB&0x01)); //czekaj gdy logiczne 1
+		czas[i] = TCNT1*8;
+		++i;
+		TCNT1 = 0x00;
+		while((PINB&0x01) && TCNT1<0x4E2); //czekaj gdy logiczne 0 i czas nie dluzszy niz 10 000ms
+		czas[i] = TCNT1*8;
+		if(czas[i]>9900) break;
+		++i;
+	}
+	i=0;	
+}
+
+void ram_eeprom()
+{
+	for(int i=0;i<36;++i)
+	{
+		eeprom_busy_wait();
+		eeprom_write_word(&czas1[i],czas[i]);		
+	}
+}

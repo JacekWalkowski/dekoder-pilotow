@@ -1,0 +1,40 @@
+Przyk³adowa ramka danych odczytanych za pomoc¹ algorytmu dekodera(przycisk PLAY, wartoœci zaokr¹glone, wyra¿one w mikrosekundach)
+
+impuls	przerwa	impuls	przerwa	impuls	przerwa	impuls	przerwa
+8050	3900	500	1400	500	400	500	1400
+500	400	500	1400	500	400	500	400
+500	400	500	3900	500	400	500	1400
+500	1400	500	1400	500	400	500	400
+500	400	500	400	500
+
+
+Opis ramki:
+Dwa pierwsze czasy tj. 8050 i 3900 tworz¹ nag³ówek wysy³anego sygna³u.
+Kolejne pary czasów tworz¹ bit o wartoœci 1 lub 0.
+
+Przyk³ad:
+500	1400	<-- logiczne 1
+500	400	<-- logiczne 0
+
+Jest to kodowanie typu SPACE, które polega na modulacji szerokoœci przerwy w sygnale.
+
+Po 8-bitowym adresie nastêpuje impuls 500[us] oraz przerwa 3900[us]. Jest to przerwa pomiêdzy kodem adresu a kodem polecenia.
+Kolejne czasy odpowiadaj¹ za 8-bitowy kod polecenia. Sygna³ zakoñczony jest impulsem 500[us].
+
+Analizuj¹c powy¿sz¹ ramke otrzymujemy:
+Adres		10101000 --> 0xA8
+Polecenie	01110000 --> 0x70
+
+
+Analizuj¹c w podany sposób informacje wysy³ane z pilota otrzmujemy nastêpuj¹ce kody poleceñ przycisków w pilocie DAEWOO:
+
+POWER		0xA8
+PLAY		0x70
+STOP		0xB0
+FF		0xF0
+REW		0x08
+ENCORE		0x3C
+STILL/F.ADV	0x88
+SLOW		0xC8
+TRACKING"-"	0x18
+TRACKING"+"	0xE8
